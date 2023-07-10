@@ -1,0 +1,4 @@
+[2023-07-04 23:06:55] [INFO ] [/home/hxk/C++Project/framework/test/test_log.cpp:64]	输出一条 info 日志到全局日志器
+[2023-07-04 23:06:55] [ERROR] [/home/hxk/C++Project/framework/test/test_log.cpp:65]	输出一条 error 日志到全局日志器
+[2023-07-05 21:05:06] [INFO ] [/home/hxk/C++Project/framework/test/test_log.cpp:64]	输出一条 info 日志到全局日志器
+[2023-07-05 21:05:06] [ERROR] [/home/hxk/C++Project/framework/test/test_log.cpp:65]	输出一条 error 日志到全局日志器
