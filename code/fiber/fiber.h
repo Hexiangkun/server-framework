@@ -8,6 +8,8 @@
 #include "noncopyable.h"
 #include "config.h"
 #include "log.h"
+#include "exception.h"
+
 namespace hxk
 {
 class Scheduler;
@@ -27,7 +29,7 @@ public:
     typedef std::function<void()> FiberFunc;
 
     enum STATE{
-        INTI,       //初始化
+        INIT,       //初始化
         READY,      //就绪
         HOLD,       //挂起
         EXEC,       //执行
@@ -36,19 +38,26 @@ public:
     };
 
 public:
+    /**
+     * @Author: hxk
+     * @brief: 创建新的协程
+     * @param {FiberFunc} callback 协程执行函数
+     * @param {size_t} stack_size   协程栈空间大小
+     * @return {*}
+     */
     explicit Fiber(FiberFunc callback, size_t stack_size = 0);
     ~Fiber();
 
     void reset(FiberFunc callback); //更换协程执行函数
 
-    void swapIn();      //换入协程
-    void swapOut();     //挂起协程
+    void swapIn();      //换入协程，通常由master fiber调用
+    void swapOut();     //挂起协程，通常由master fiber调用
 
     void call();        //换入协程，将调用时的上下文挂起，保存到线程局部变量中
-    void back();        //挂起协程
+    void back();        //挂起协程，保存当前上下文到协程对象中，从线程局部变量恢复上下文
 
-    void swapIn(Fiber::_ptr fiber_ptr);
-    void swapOut(Fiber::_ptr fiber_ptr);
+    void swapIn(Fiber::_ptr fiber_ptr);     //换入协程，通常由调度器调用
+    void swapOut(Fiber::_ptr fiber_ptr);    //挂起协程，通常由调度器调用
 
     uint64_t getId();   //获取协程id
     STATE getState();   //获取协程状态
@@ -80,7 +89,7 @@ private:
 
     STATE m_state;
 
-    ucontext_t m_context;   //协程上下文
+    ucontext_t m_ucontext;   //协程上下文
 
     void* m_stack;  //协程栈空间指针
 
