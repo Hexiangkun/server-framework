@@ -80,7 +80,89 @@ void Fiber::swapIn()
     setThis(this);
     m_state = EXEC;
     //assert(Scheduler) ??????
-    
+    //挂起master fiber，切换到当前fiber
+    assert(Scheduler::getMainFiber() && "请勿手动调用该函数");
+    if(swapcontext(&(Scheduler::getMainFiber()->m_ucontext), &m_ucontext)){
+        throw Exception(std::string(strerror(errno)));
+    }
+}
+
+void Fiber::swapOut()
+{
+    assert(m_stack);
+    setThis(FiberInfo::t_master_fiber.get());
+
+    //挂起当前fiber，切换到master fiber
+    assert(Scheduler::getMainFiber() && "请勿手动调用该函数");
+    if(swapcontext(&m_ucontext, &(Scheduler::getMainFiber()->m_ucontext))){
+        throw Exception(std::string(strerror(errno)));
+    }
+}
+
+void Fiber::call()
+{
+    assert(Scheduler::getMainFiber() && "当前线程不存在主协程");
+    assert(m_state == INIT || m_state == READY || m_state == HOLD);
+    setThis(this);
+    m_state = EXEC;
+    if(swapcontext(&(FiberInfo::t_master_fiber->m_ucontext), &m_ucontext)){
+        throw Exception(std::string(strerror(errno)));
+    }
+}
+
+void Fiber::back()
+{
+    assert(FiberInfo::t_master_fiber && "当前线程不存在主线程");
+    assert(m_stack);
+    setThis(FiberInfo::t_master_fiber.get());
+    if(swapcontext(&m_ucontext, &(FiberInfo::t_master_fiber->m_ucontext))){
+        throw Exception(std::string(strerror(errno)));
+    }
+}
+
+void Fiber::swapIn(Fiber::_ptr fiber_ptr)
+{
+    assert(m_state == INIT || m_state == READY || m_state == HOLD);
+    setThis(this);
+    m_state = EXEC;
+    if(swapcontext(&(fiber_ptr->m_ucontext), &m_ucontext)){
+        throw Exception(std::string(strerror(errno)));
+    }
+}
+
+void Fiber::swapOut(Fiber::_ptr fiber_ptr)
+{
+    assert(m_state);
+    setThis(fiber_ptr.get());
+    m_state = EXEC;
+    if(swapcontext(&m_ucontext, &(fiber_ptr->m_ucontext))) {
+        throw Exception(std::string(strerror(errno)));
+    }
+}
+
+uint64_t Fiber::getId()
+{
+    return m_id;
+}
+
+Fiber::STATE Fiber::getState() 
+{
+    return m_state;
+}
+
+bool Fiber::finish() const
+{
+    return (m_state == TERM || m_state == EXCEPTION);
+}
+
+Fiber::_ptr Fiber::getThis()
+{
+    if(FiberInfo::t_fiber != nullptr) {
+        return FiberInfo::t_fiber->shared_from_this();
+    }
+    //为空说明不存在master fiber，则初始化master fiber
+    FiberInfo::t_master_fiber.reset(new Fiber());
+    return FiberInfo::t_master_fiber->shared_from_this();
 }
 
 void Fiber::setThis(Fiber* fiber)   //设置正在执行的协程
@@ -88,4 +170,67 @@ void Fiber::setThis(Fiber* fiber)   //设置正在执行的协程
     FiberInfo::t_fiber = fiber;
 }
 
+void Fiber::yield()
+{
+    Fiber::_ptr current_fiber = getThis();
+    current_fiber->m_state = HOLD;
+    current_fiber->back();
+}
+
+void Fiber::yieldToHold()
+{
+    Fiber::_ptr current_fiber = getThis();
+    current_fiber->m_state = HOLD;
+    current_fiber->swapOut();
+}
+
+
+uint64_t Fiber::getTotalFiberCount()
+{
+    return FiberInfo::s_fiber_count;
+}
+
+uint64_t Fiber::getFiberId()
+{
+    if(FiberInfo::t_fiber != nullptr){
+        return FiberInfo::t_fiber->getId();
+    }
+    return 0;
+}
+
+void Fiber::mainFunc()
+{
+    Fiber::_ptr current_fiber = getThis();
+    try
+    {
+        current_fiber->m_callback();
+        current_fiber->m_callback = nullptr;
+        current_fiber->m_state = TERM;        
+    }
+    catch(Exception& e)
+    {
+        LOG_FORMAT_ERROR(g_logger, "Fiber exception: %s, call stack:\n%s", e.what(), e.stackTrace());
+    }
+    catch(std::exception& e)
+    {
+        LOG_FORMAT_ERROR(g_logger, "Fiber exception: %s", e.what());
+    }
+    catch(...)
+    {
+        LOG_ERROR(g_logger, "Fiber exception");
+    }
+    //执行结束后，切回主协程
+    Fiber* current_fiber_ptr = current_fiber.get();
+    current_fiber.reset();      //释放shared_ptr的所有权
+    if(Scheduler::getThis() &&
+        Scheduler::getThis()->m_root_thread_id == GetThreadID() &&
+        Scheduler::getThis()->m_root_fiber.get() != current_fiber_ptr)
+    {
+        current_fiber_ptr->swapOut();
+    }
+    else{
+        current_fiber_ptr->back();
+    }
+
+}
 }

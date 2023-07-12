@@ -9,6 +9,7 @@
 #include "config.h"
 #include "log.h"
 #include "exception.h"
+#include "scheduler.h"
 
 namespace hxk
 {
