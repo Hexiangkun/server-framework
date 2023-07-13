@@ -7,7 +7,7 @@ static Logger::_ptr g_logger = GET_LOGGER("system");
 //master fiber
 Fiber::Fiber(): m_id(0), m_stack_size(0),m_state(EXEC), m_ucontext(), m_stack(nullptr),m_callback()
 {
-    setThis(this);
+    setThis(this);  //设置当前线程正在执行的协程
 
     //获取上下文对象，将当前上下文保存到m_ucontext中
     if(getcontext(&m_ucontext)) {
@@ -34,18 +34,22 @@ Fiber::Fiber(FiberFunc callback, size_t stack_size):m_id(++FiberInfo::s_fiber_id
     if(getcontext(&m_ucontext)){
         throw Exception(std::string(strerror(errno)));
     }
-    m_stack = stackAllocator::Alloc(m_stack_size);
-    m_ucontext.uc_link = nullptr;
+    m_stack = stackAllocator::Alloc(m_stack_size);  //为当前协程分配栈空间
+    m_ucontext.uc_link = nullptr;                   //nullptr代表当前协程执行完毕，线程就退出
     m_ucontext.uc_stack.ss_sp = m_stack;
     m_ucontext.uc_stack.ss_size = m_stack_size;
 
-    makecontext(&m_ucontext, &Fiber::mainFunc, 0);
+    makecontext(&m_ucontext, &Fiber::mainFunc, 0);  //给上下文绑定入口函数Fiber::mainFunc
     ++FiberInfo::s_fiber_count;
+
+    LOG_FORMAT_DEBUG(g_logger,"调用Fiber::Fiber 创建新的协程，线程 = %ld，协程 = %ld",
+            GetThreadID(), m_id);
 }
 
 Fiber::~Fiber()
 {
     if(m_stack){    //存在栈，说明是子协程
+        //只有子协程未运行或者异常，才能被销毁
         assert(m_state == INIT || m_state == TERM || m_state == EXCEPTION) ;
         stackAllocator::Delalloc(m_stack, m_stack_size);
     }
@@ -58,9 +62,10 @@ Fiber::~Fiber()
     }
 }
 
-void Fiber::reset(FiberFunc callback)
+void Fiber::reset(FiberFunc callback)   //重新设置协程的执行函数
 {
-    assert(m_stack);
+    assert(m_stack);    //当前协程必须存在栈空间
+    //协程不在运行状态
     assert(m_state == INIT || m_state == TERM || m_state == EXCEPTION);
     m_callback = std::move(callback);
     if(getcontext(&m_ucontext)){
@@ -82,6 +87,7 @@ void Fiber::swapIn()
     //assert(Scheduler) ??????
     //挂起master fiber，切换到当前fiber
     assert(Scheduler::getMainFiber() && "请勿手动调用该函数");
+    //执行m_ucontext的上下文，如果m-ucontext.uc_link为空，则线程结束
     if(swapcontext(&(Scheduler::getMainFiber()->m_ucontext), &m_ucontext)){
         throw Exception(std::string(strerror(errno)));
     }
@@ -110,7 +116,7 @@ void Fiber::call()
     }
 }
 
-void Fiber::back()
+void Fiber::back()//切换回主协程
 {
     assert(FiberInfo::t_master_fiber && "当前线程不存在主线程");
     assert(m_stack);
@@ -174,7 +180,7 @@ void Fiber::yield()
 {
     Fiber::_ptr current_fiber = getThis();
     current_fiber->m_state = HOLD;
-    current_fiber->back();
+    current_fiber->back();  //回到主协程
 }
 
 void Fiber::yieldToHold()
@@ -190,7 +196,7 @@ uint64_t Fiber::getTotalFiberCount()
     return FiberInfo::s_fiber_count;
 }
 
-uint64_t Fiber::getFiberId()
+uint64_t Fiber::getThisFiberId()
 {
     if(FiberInfo::t_fiber != nullptr){
         return FiberInfo::t_fiber->getId();

@@ -79,7 +79,7 @@ public:
 
     static uint64_t getTotalFiberCount();   //获取存在协程数量
 
-    static uint64_t getFiberId();       //获取当前协程的id
+    static uint64_t getThisFiberId();       //获取当前协程的id
 
     static void mainFunc();     //协程入口函数
 

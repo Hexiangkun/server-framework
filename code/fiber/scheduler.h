@@ -81,14 +81,28 @@ public:
         bool need_tickle = false;
         {
             ScopedLock lock(&m_mutex);
-            
+            need_tickle = scheduleNonBlock(std::forward<Executable>(exec), thread_id);
+        }
+        if(need_tickle) {
+            tickle();
         }
     }
 
     template<typename InputIterator>
     void schedule(InputIterator begin, InputIterator end)
     {
-
+        bool need_tickle = false;
+        {
+            ScopedLock lock(&m_mutex);
+            while(begin != end) {
+                need_tickle = scheduleNonBlock(*begin) || need_tickle;
+                ++begin;
+            }
+        }
+        if(need_tickle)
+        {
+            tickle();
+        }
     }
 
 protected:
@@ -108,7 +122,17 @@ private:
     template<typename Executable>
     bool scheduleNonBlock(Executable&& exec, long thread_id = -1, bool instant = false)
     {
-
+        bool need_tickle = m_task_list.empty();
+        auto task = std::make_unique<Task>(std::forward<Executable>(exec), thread_id);
+        if(task->m_fiber || task->m_callback) {
+            if(instant) {
+                m_task_list.pop_front(std::move(task));
+            }
+            else {
+                m_task_list.push_back(std::move(task));
+            }
+        }
+        return need_tickle;
     }
 
 protected:
