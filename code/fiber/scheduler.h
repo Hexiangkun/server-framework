@@ -8,10 +8,10 @@
 #include "fiber.h"
 #include "lock.h"
 #include "thread.h"
+#include "hook.h"
 
 namespace hxk
 {
-
 struct Task
 {
     typedef std::shared_ptr<Task> _ptr;
@@ -20,14 +20,14 @@ struct Task
 
     Fiber::_ptr m_fiber;
     TaskFunc m_callback;
-    long m_thread_id;   //任务要绑定执行线程的id
+    long m_thread_id; // 任务要绑定执行线程的id
 
-    Task():m_thread_id(-1) {}
-    Task(const Task& lhs) = default;
+    Task() : m_thread_id(-1) {}
+    Task(const Task &lhs) = default;
     Task(Fiber::_ptr f, long id) : m_fiber(std::move(f)), m_thread_id(id) {}
-    Task(const TaskFunc& cb, long id) : m_callback(cb), m_thread_id(id) {}
-    Task(TaskFunc&& cb, long id) : m_callback(std::move(cb)), m_thread_id(id) {}
-    Task& operator=(const Task& lhs) = default;
+    Task(const TaskFunc &cb, long id) : m_callback(cb), m_thread_id(id) {}
+    Task(TaskFunc &&cb, long id) : m_callback(std::move(cb)), m_thread_id(id) {}
+    Task &operator=(const Task &lhs) = default;
 
     void reset()
     {
@@ -39,6 +39,9 @@ struct Task
 
 class Scheduler : public noncopyable
 {
+private:
+   
+
 public:
     friend class Fiber;
     typedef std::shared_ptr<Scheduler> _ptr;
@@ -56,14 +59,21 @@ public:
     explicit Scheduler(size_t thread_size, bool use_caller = true, std::string name="");
     virtual ~Scheduler();
 
-    void start();
-    void stop();
+    void start();           //启动协程调度器
+    void stop();            //停止协程调度器
     bool hasFreeThread();
     virtual bool isStop();
 
 public:
-    static Scheduler* getThis();    //获取当前协程的调度器
-    static Fiber* getMainFiber();   //获取调度器的调度工作协程
+    static Scheduler* getThis();    //获取当前协程调度器
+    static Fiber* getMainFiber();   //获取当前协程调度器的调度工作协程
+
+
+protected:
+    void run();
+    virtual void tickle();
+    virtual bool onStop();  //调度器停止时的回调函数，返回调度器当前是否处于停止工作的状态
+    virtual void onFree();  //调度器空闲时的回调函数
 
 public:
     
@@ -105,11 +115,6 @@ public:
         }
     }
 
-protected:
-    void run();
-    virtual void tickle();
-    virtual bool onStop();  //调度器停止时的回调函数，返回调度器当前是否处于停止工作的状态
-    virtual void onFree();  //调度器空闲时的回调函数
 private:
     /**
      * @Author: hxk
@@ -126,7 +131,7 @@ private:
         auto task = std::make_unique<Task>(std::forward<Executable>(exec), thread_id);
         if(task->m_fiber || task->m_callback) {
             if(instant) {
-                m_task_list.pop_front(std::move(task));
+                m_task_list.push_front(std::move(task));
             }
             else {
                 m_task_list.push_back(std::move(task));

@@ -1,8 +1,9 @@
 #include "fiber.h"
-
+#include "scheduler.h"
 namespace hxk
 {
 static Logger::_ptr g_logger = GET_LOGGER("system");
+
 
 //master fiber
 Fiber::Fiber(): m_id(0), m_stack_size(0),m_state(EXEC), m_ucontext(), m_stack(nullptr),m_callback()
@@ -19,12 +20,12 @@ Fiber::Fiber(): m_id(0), m_stack_size(0),m_state(EXEC), m_ucontext(), m_stack(nu
     LOG_FORMAT_DEBUG(g_logger, "use Fiber::Fiber() to create master fiber, thread id = %ld, fiber id = %ld.",GetThreadID(), m_id);
 }
 
-Fiber::Fiber(FiberFunc callback, size_t stack_size):m_id(++FiberInfo::s_fiber_id),
+Fiber::Fiber(FiberFunc callback, size_t stack_size, bool use_caller):m_id(++FiberInfo::s_fiber_id),
                                                     m_stack_size(stack_size),
                                                     m_state(INIT),
                                                     m_ucontext(),
                                                     m_stack(nullptr),
-                                                    m_callback(callback)
+                                                    m_callback(std::move(callback))
 {   
     //如果stack_size为0，使用config文件的fiber.stack_size
     if(stack_size == 0) {
@@ -39,23 +40,35 @@ Fiber::Fiber(FiberFunc callback, size_t stack_size):m_id(++FiberInfo::s_fiber_id
     m_ucontext.uc_stack.ss_sp = m_stack;
     m_ucontext.uc_stack.ss_size = m_stack_size;
 
-    makecontext(&m_ucontext, &Fiber::mainFunc, 0);  //给上下文绑定入口函数Fiber::mainFunc
+    if(!use_caller){
+        makecontext(&m_ucontext, &Fiber::mainFunc, 0);  //给上下文绑定入口函数Fiber::mainFunc
+    }
+    else{
+        makecontext(&m_ucontext, &Fiber::callerMainFunc, 0);
+    }
     ++FiberInfo::s_fiber_count;
 
-    LOG_FORMAT_DEBUG(g_logger,"调用Fiber::Fiber 创建新的协程，线程 = %ld，协程 = %ld",
-            GetThreadID(), m_id);
+    // LOG_FORMAT_DEBUG(g_logger,"调用Fiber::Fiber 创建新的协程，线程 = %ld,协程 = %ld",
+    //         GetThreadID(), m_id);
 }
 
 Fiber::~Fiber()
 {
+    --FiberInfo::s_fiber_count;
     if(m_stack){    //存在栈，说明是子协程
         //只有子协程未运行或者异常，才能被销毁
         assert(m_state == INIT || m_state == TERM || m_state == EXCEPTION) ;
         stackAllocator::Delalloc(m_stack, m_stack_size);
+            // LOG_FORMAT_DEBUG(g_logger,
+            //      "调用 Fiber::~Fiber 析构协程，thread_id = %ld, fiber_id = %ld",
+            //      GetThreadID(), m_id);
     }
     else{   //为master fiber
         assert(!m_callback);
         assert(m_state == EXEC);
+        // LOG_FORMAT_DEBUG(g_logger,
+        //          "调用 master Fiber::~Fiber 析构协程，thread_id = %ld, fiber_id = %ld",
+        //          GetThreadID(), m_id);
         if(FiberInfo::t_fiber == this) {
             setThis(nullptr);
         }
@@ -84,7 +97,7 @@ void Fiber::swapIn()
     assert(m_state == INIT || m_state == READY || m_state == HOLD);
     setThis(this);
     m_state = EXEC;
-    //assert(Scheduler) ??????
+
     //挂起master fiber，切换到当前fiber
     assert(Scheduler::getMainFiber() && "请勿手动调用该函数");
     //执行m_ucontext的上下文，如果m-ucontext.uc_link为空，则线程结束
@@ -96,7 +109,7 @@ void Fiber::swapIn()
 void Fiber::swapOut()
 {
     assert(m_stack);
-    setThis(FiberInfo::t_master_fiber.get());
+    setThis(FiberInfo::t_master_fiber.get());       // ?????????????
 
     //挂起当前fiber，切换到master fiber
     assert(Scheduler::getMainFiber() && "请勿手动调用该函数");
@@ -105,9 +118,9 @@ void Fiber::swapOut()
     }
 }
 
-void Fiber::call()
+void Fiber::call()  //从master fiber切换到当前的协程
 {
-    assert(Scheduler::getMainFiber() && "当前线程不存在主协程");
+    assert(FiberInfo::t_master_fiber && "当前线程不存在主协程");
     assert(m_state == INIT || m_state == READY || m_state == HOLD);
     setThis(this);
     m_state = EXEC;
@@ -116,7 +129,7 @@ void Fiber::call()
     }
 }
 
-void Fiber::back()//切换回主协程
+void Fiber::back()//从当前协程切换回主协程master fiber
 {
     assert(FiberInfo::t_master_fiber && "当前线程不存在主线程");
     assert(m_stack);
@@ -156,7 +169,7 @@ Fiber::STATE Fiber::getState()
     return m_state;
 }
 
-bool Fiber::finish() const
+bool Fiber::finish() const noexcept
 {
     return (m_state == TERM || m_state == EXCEPTION);
 }
@@ -176,11 +189,11 @@ void Fiber::setThis(Fiber* fiber)   //设置正在执行的协程
     FiberInfo::t_fiber = fiber;
 }
 
-void Fiber::yield()
+void Fiber::yieldToReady()
 {
     Fiber::_ptr current_fiber = getThis();
-    current_fiber->m_state = HOLD;
-    current_fiber->back();  //回到主协程
+    current_fiber->m_state = READY;
+    current_fiber->back();  //回到主协程            ?????
 }
 
 void Fiber::yieldToHold()
@@ -204,6 +217,11 @@ uint64_t Fiber::getThisFiberId()
     return 0;
 }
 
+void Fiber::callerMainFunc()
+{
+
+}
+
 void Fiber::mainFunc()
 {
     Fiber::_ptr current_fiber = getThis();
@@ -215,14 +233,17 @@ void Fiber::mainFunc()
     }
     catch(Exception& e)
     {
+        current_fiber->m_state = EXCEPTION;
         LOG_FORMAT_ERROR(g_logger, "Fiber exception: %s, call stack:\n%s", e.what(), e.stackTrace());
     }
     catch(std::exception& e)
     {
+        current_fiber->m_state = EXCEPTION;
         LOG_FORMAT_ERROR(g_logger, "Fiber exception: %s", e.what());
     }
     catch(...)
     {
+        current_fiber->m_state = EXCEPTION;
         LOG_ERROR(g_logger, "Fiber exception");
     }
     //执行结束后，切回主协程
