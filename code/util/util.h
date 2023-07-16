@@ -2,7 +2,7 @@
  * @Author: Helens-dot 374961015@qq.com
  * @Date: 2023-06-04 22:50:02
  * @LastEditors: Helens-dot 374961015@qq.com
- * @LastEditTime: 2023-06-06 21:56:02
+ * @LastEditTime: 2023-07-16 20:49:28
  * @FilePath: /C++Project/framework/code/util/util.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -20,6 +20,9 @@
 #include <assert.h>         //assert
 #include <cxxabi.h>         //abi::__cxa_demangle
 #include <sys/time.h>       //gettimeofday
+
+#include "fiber.h"
+
 namespace hxk
 {
 

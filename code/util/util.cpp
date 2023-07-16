@@ -10,7 +10,7 @@ long GetThreadID()
 
 uint64_t GetFiberID()
 {
-    return 0;
+    return Fiber::getThisFiberId();
 }
 
 void BackTrace(std::vector<std::string>& out, int size, int skip)
@@ -20,6 +20,7 @@ void BackTrace(std::vector<std::string>& out, int size, int skip)
     char** string_list = ::backtrace_symbols(void_ptr_list,call_stack_count);
     if(string_list == NULL){
         std::cerr << "Backtrace() exception!" << std::endl;
+        return;
     }
 
     for(int i = skip; string_list && i < call_stack_count; i++){
