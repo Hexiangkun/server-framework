@@ -13,5 +13,7 @@ int main()
 
     uint64_t end = hxk::GetCurrentMS();
     std::cout << end - begin <<std::endl;
+
+    std::cout << hxk::BackTraceToString() << std::endl;
     return 0;
 }
