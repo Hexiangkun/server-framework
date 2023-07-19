@@ -74,6 +74,9 @@ struct _HookIniter
 static _HookIniter s_hook_initer;
 
 
+} // namespace hxk
+
+
 struct TimerInfo
 {
     int cancelled  = 0;
@@ -87,4 +90,17 @@ static ssize_t doIO(int fd, OriginFunc func, const char* hook_func_name, uint32_
     }
 }
 
-} // namespace hxk
+extern "C"
+{
+#define DEF_FUNC_NAME(name) name##_func name##_f = nullptr;
+    DEAL_FUNC(DEF_FUNC_NAME)
+#undef DEF_FUNC_NAME
+
+unsigned int sleep(unsigned int seconds)
+{
+    if(!hxk::t_hook_enabled) {
+        return sleep_f(seconds);
+    }
+    
+}
+}
