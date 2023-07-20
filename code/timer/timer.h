@@ -5,6 +5,7 @@
 #include <set>
 
 #include "lock.h"
+#include "util.h"
 
 namespace hxk
 {
