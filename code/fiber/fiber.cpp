@@ -48,8 +48,8 @@ Fiber::Fiber(FiberFunc callback, size_t stack_size, bool use_caller):m_id(++Fibe
     }
     ++FiberInfo::s_fiber_count;
 
-    // LOG_FORMAT_DEBUG(g_logger,"调用Fiber::Fiber 创建新的协程，线程 = %ld,协程 = %ld",
-    //         GetThreadID(), m_id);
+    LOG_FORMAT_DEBUG(g_logger,"调用Fiber::Fiber 创建新的协程，线程 = %ld,协程 = %ld",
+            GetThreadID(), m_id);
 }
 
 Fiber::~Fiber()
@@ -106,7 +106,7 @@ void Fiber::swapIn()
     }
 }
 
-void Fiber::swapOut()
+void Fiber::swapOut()   //和scheduler的master fiber切换
 {
     assert(m_stack);
     setThis(FiberInfo::t_master_fiber.get());       // ?????????????

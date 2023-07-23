@@ -8,7 +8,9 @@
                 "/home/hxk/C++Project/framework/code/log/",
                 "/home/hxk/C++Project/framework/code/thread/",
                 "/home/hxk/C++Project/framework/code/config/",
-                "/home/hxk/C++Project/server-framework/code/fiber/"
+                "/home/hxk/C++Project/server-framework/code/fiber/",
+                "/home/hxk/C++Project/server-framework/code/timer/",
+                "/home/hxk/C++Project/server-framework/code/hook/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

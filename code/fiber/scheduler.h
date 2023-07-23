@@ -39,9 +39,6 @@ struct Task
 
 class Scheduler : public noncopyable
 {
-private:
-   
-
 public:
     friend class Fiber;
     typedef std::shared_ptr<Scheduler> _ptr;

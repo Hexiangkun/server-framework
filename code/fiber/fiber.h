@@ -47,7 +47,7 @@ public:
      * @param {bool}   use_caller   是否在main fiber上调度
      * @return {*}
      */
-    explicit Fiber(FiberFunc callback, size_t stack_size = 0,bool user_call = false);
+    explicit Fiber(FiberFunc callback, size_t stack_size = 0,bool user_caller = false);
     ~Fiber();
 
     /**
