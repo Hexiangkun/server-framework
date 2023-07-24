@@ -255,5 +255,101 @@ bool IOManager::isStop(uint64_t& timeout)
     return timeout == ~0ull && m_pending_event_count == 0 && Scheduler::isStop();
 }
 
+void IOManager::onFree()
+{
+    LOG_DEBUG(g_logger, "调用 IOManager::onFree()");
+    auto event_list = std::make_unique<epoll_event[]>(64);
+
+    while(true)
+    {
+        uint64_t next_timeout = 0;
+        if(isStop(next_timeout)) {
+            if(next_timeout == ~0ull) {
+                LOG_FORMAT_DEBUG(g_logger, "调度器 %s 已经停止执行", m_name.c_str());
+                break;
+            }
+        }
+        int result = 0;
+        while(true) 
+        {
+            static const int MAX_TIMEOUT = 1000;
+            if(next_timeout != ~0ull) {
+                next_timeout = static_cast<int>(next_timeout) > MAX_TIMEOUT ? MAX_TIMEOUT:next_timeout; 
+            }
+            else {
+                next_timeout = MAX_TIMEOUT;
+            }
+            result = epoll_wait(m_epoll_fd, event_list.get(), 64, static_cast<int>(next_timeout));
+            if(result < 0) {
+
+            }
+            if(result >= 0) {
+                break;
+            }
+        }
+
+        std::vector<std::function<void()>> fns;
+        listExpiredCallback(fns);
+        if(!fns.empty()) {
+            schedule(fns.begin(), fns.end());
+        }
+
+        for(int i = 0; i < result; i++) {
+            epoll_event& ev = event_list[i];
+            if(event.data.fd == m_tickle_fds[0]) {
+                char dummy;
+                while(true) {
+                    int status = read(ev.data.fd, &dummy, 1);
+                    if(status == 0 || status == -1) {
+                        break;
+                    }
+                }
+                continue;
+            }
+
+            auto fd_ctx = static_cast<FDContent*>(ev.data.ptr);
+            ScopedLock lock(&(fd_ctx->m_mutex));
+            if(ev.events & (EPOLLERR | EPOLLHUP)) {
+                ev.events |= EPOLLIN | EPOLLOUT;
+            }
+            uint32_t real_event = FDEventType::NONE;
+            if(ev.events & EPOLLIN) {
+                real_event |= FDEventType::READ;
+            }
+            if(ev.events & EPOLLOUT) {
+                real_event != FDEventType::WRITE;
+            }
+
+            if((fd_ctx->m_event_type & real_event) == FDEventType::NONE) {
+                continue;
+            }
+
+            uint32_t left_events = (fd_ctx->m_event_type & ~real_event);
+            int op = left_events == 0 ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
+            ev.events = EPOLLET | left_events;
+            if(epoll_ctl(m_epoll_fd, op, fd_ctx->m_fd, &ev) == -1) {
+                LOG_FORMAT_ERROR(g_logger, "epoll_ctl(%d, %d, %d, %ul) :  errno = %d, %s",
+                    m_epoll_fd, op, fd_ctx->m_fd, ev.events, errno, strerror(errno));
+            }
+            if(real_event & FDEventType::READ) {
+                fd_ctx->triggerEvent(FDEventType::READ);
+                --m_pending_event_count;
+            }
+            if(real_event & FDEventType::WRITE) {
+                fd_ctx->triggerEvent(FDEventType::WRITE);
+                --m_pending_event_count;
+            }
+        }
+        Fiber::_ptr current_fiber = Fiber::getThis();
+        auto raw_ptr = current_fiber.get();
+        current_fiber.reset();
+        raw_ptr->swapOut();
+    }
+}
+
+void IOManager::onTimerInsertedAtFirst()
+{
+    tickle();
+}
 
 }
