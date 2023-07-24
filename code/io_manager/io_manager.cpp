@@ -296,7 +296,7 @@ void IOManager::onFree()
 
         for(int i = 0; i < result; i++) {
             epoll_event& ev = event_list[i];
-            if(event.data.fd == m_tickle_fds[0]) {
+            if(ev.data.fd == m_tickle_fds[0]) {
                 char dummy;
                 while(true) {
                     int status = read(ev.data.fd, &dummy, 1);

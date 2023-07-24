@@ -10,7 +10,8 @@
                 "/home/hxk/C++Project/framework/code/config/",
                 "/home/hxk/C++Project/server-framework/code/fiber/",
                 "/home/hxk/C++Project/server-framework/code/timer/",
-                "/home/hxk/C++Project/server-framework/code/hook/"
+                "/home/hxk/C++Project/server-framework/code/hook/",
+                "/home/hxk/C++Project/server-framework/code/address/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
