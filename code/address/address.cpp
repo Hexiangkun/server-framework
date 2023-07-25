@@ -1,6 +1,7 @@
 #include "address.h"
 #include <sstream>
 #include <cstring>
+#include <string.h>
 
 namespace hxk
 {
@@ -39,4 +40,120 @@ bool Address::operator!=(const Address& rhs) const
 {
     return !(*this == rhs);
 }
+
+
+IPv4Address::IPv4Address(uint32_t address, uint16_t port)
+{
+    memset(&m_addr, 0, sizeof(m_addr));
+    m_addr.sin_family = AF_INET;
+    m_addr.sin_port = htons(port);
+    m_addr.sin_addr.s_addr = htnol(address);
 }
+
+const sockaddr* IPv4Address::getAddr() const
+{
+    return (sockaddr*)(&m_addr);
+}
+
+socklen_t IPv4Address::getAddrLen() const
+{
+    return sizeof(m_addr);
+}
+
+IPAddress::_ptr IPv4Address::broadcastAddress(uint32_t prefix_len) 
+{
+
+}
+
+IPv4Address::_ptr IPv4Address::networkAddress(uint32_t prefix_len)
+{
+
+}
+
+IPv4Address::_ptr IPv4Address::subnetAddress(uint32_t prefix_len)
+{
+
+}
+
+uint32_t IPv4Address::getPort() const
+{
+    return ntohs(m_addr.sin_port);
+}
+
+void IPv4Address::setPort(uint16_t port) 
+{
+    m_addr.sin_port = htons(port);
+}
+
+std::ostream& IPv4Address::insert(std::ostream& os) const
+{
+    auto addr = nthol(m_addr.sin_addr.s_addr);
+    os << ((addr >> 24) & 0xff) << "."
+       << ((addr >> 16) & 0xff) << "."
+       << ((addr >> 8) & 0xff) << "."
+       << ((addr >> 0) & 0xff) << ":" << ntohs(m_addr.sin_port);
+    return os;
+}
+
+
+
+IPv6Address::IPv6Address()
+{
+    memset(&m_addr, 0, sizeof(m_addr));
+    m_addr.sin_family = AF_INET6;
+}
+
+IPv6Address::IPv6Address(const char* address, uint16_t port)
+{
+    memset(&m_addr, 0, sizeof(m_addr));
+    m_addr.sin_family = AF_INET6;
+    m_addr.sin_port = htons(port);
+    memcpy(&m_addr.sin6_addr.s6_addr, address, 16);
+}
+
+const sockaddr* IPv6Address::getAddr() const
+{
+    return (sockaddr*)(&m_addr);
+}
+
+socklen_t IPv6Address::getAddrLen() const
+{
+    return sizeof(m_addr);
+}
+
+IPAddress::_ptr IPv6Address::broadcastAddress(uint32_t prefix_len) 
+{
+
+}
+
+IPv4Address::_ptr IPv6Address::networkAddress(uint32_t prefix_len)
+{
+
+}
+
+IPv4Address::_ptr IPv6Address::subnetAddress(uint32_t prefix_len)
+{
+
+}
+
+uint32_t IPv6Address::getPort() const
+{
+    // return ntohs(m_addr.sin_port);
+}
+
+void IPv6Address::setPort(uint16_t port) 
+{
+    // m_addr.sin_port = htons(port);
+}
+
+std::ostream& IPv6Address::insert(std::ostream& os) const
+{
+    // auto addr = nthol(m_addr.sin_addr.s_addr);
+    // os << ((addr >> 24) & 0xff) << "."
+    //    << ((addr >> 16) & 0xff) << "."
+    //    << ((addr >> 8) & 0xff) << "."
+    //    << ((addr >> 0) & 0xff) << ":" << ntohs(m_addr.sin_port);
+    // return os;
+}
+
+} 
