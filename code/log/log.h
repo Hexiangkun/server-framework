@@ -22,11 +22,11 @@
 #define LOG_WARN(logger, message) LOG_LEVEL(logger, hxk::LogLevel::WARN, message)
 #define LOG_ERROR(logger, message) LOG_LEVEL(logger, hxk::LogLevel::ERROR, message)
 #define LOG_FATAL(logger, message) LOG_LEVEL(logger, hxk::LogLevel::FATAL, message)
+#define LOG(logger, message) LOG_LEVEL(logger, hxk::LogLevel::FATAL, message)
 
-#define LOG_S_EVENT(logger,level) \
+#define LOG_S_EVENT(logger,level)  std::make_shared<hxk::LogEventWrap>(logger, level)->getSS()
 
-#define LOG_S_DEBUG(logger)
-
+#define LOG_S_DEBUG(logger) LOG_S_EVENT(logger, hxk::LogLevel::DEBUG)
 
 #define LOG_FORMAT_LEVEL(logger, level, format, argv...)        \
     {                                                           \
@@ -111,26 +111,7 @@ struct LogConfig
     }
 };
 
-class LogEventWrap
-{
-public:
-    LogEventWrap(Logger::_ptr logger):m_logerr(logger)
-    {
 
-    }
-    ~LogEventWrap()
-    {
-        
-    }
-
-    std::stringstream& getSS()
-    {
-        return ss;
-    }
-private:
-    Logger::_ptr m_logerr;
-    std::stringstream ss;
-};
 
 /**
  * @Author: hxk
@@ -164,6 +145,31 @@ private:
     time_t m_time;              //时间
     std::string m_content;      //内容
 };
+
+class Logger;
+
+class LogEventWrap
+{
+public:
+    LogEventWrap(Logger::_ptr& logger, LogLevel::Level level):m_logerr(logger),m_level(level)
+    {
+
+    }
+    ~LogEventWrap()
+    {
+        m_logerr->log(MAKE_LOG_EVENT(m_level, ss.str()));
+    }
+
+    std::stringstream& getSS()
+    {
+        return ss;
+    }
+private:
+    Logger::_ptr m_logerr;
+    LogLevel::Level m_level;
+    std::stringstream ss;
+};
+
 
 class FormatItem
 {

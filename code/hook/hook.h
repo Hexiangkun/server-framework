@@ -7,7 +7,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <dlfcn.h>
+#include <stdarg.h>
 
 namespace hxk
 {
@@ -79,7 +79,7 @@ extern close_func close_f;
 typedef ssize_t (*readv_func)(int fd, const struct iovec* iov, int iovcnt);
 extern readv_func readv_f;
 
-typedef ssize_t (*writev_func)(int fd, const struct iovec* iov, int iovcnt);
+typedef ssize_t (*writev_func)(int fd, const struct iovec *iov, int iovcnt);
 extern writev_func writev_f;
 
 /// @brief fcntl.h

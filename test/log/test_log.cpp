@@ -75,8 +75,8 @@ void TEST_createLoggerByYAMLFile()
 
 int main()
 {
-    //TEST_macroDefaultLogger();
+    TEST_macroDefaultLogger();
     //TEST_getNonexistentLogger();
     //TEST_loggerConfig();
-    TEST_createLoggerByYAMLFile();
+    //TEST_createLoggerByYAMLFile();
 }

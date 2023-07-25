@@ -27,24 +27,22 @@ std::string LogLevel::levelToString(LogLevel::Level level)
 }
 
 LogLevel::Level LogLevel::fromStringToLevel(std::string str) {
-    switch(str)
-    {
-    case "UNKONWN":
-        return LogLevel::Level::UNKNOWN;
-    case "DEBUG":
-        return Level::DEBUG;
-    case "INFO":
-        return Level::INFO;
-    case "WARN":
-        return Level::WARN;
-    case "ERROR":
-        return Level::ERROR;
-    case "FATAL":
-        return Level::FATAL;
-    default:
+    if(str == "UNKONWN")
         return Level::UNKNOWN;
-    }
+    else if(str == "DEBUG")
+        return Level::DEBUG;
+    else if(str == "INFO")
+        return Level::INFO;
+    else if(str == "WARN")
+        return Level::WARN;
+    else if(str == "ERROR")
+        return Level::ERROR;
+    else if(str == "FATAL")
+        return Level::FATAL;
+    else
+        return Level::UNKNOWN;
 }
+
 }
 
 //LogEvent

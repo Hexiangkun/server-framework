@@ -38,67 +38,7 @@ map_3: 3000
 test_set: [1000, 2000, 3000, 1000, 2000, 3000]
 */
 
-//自定义类的解析
-struct Goods
-{
-public:
-    std::string name;
-    double price;
-public:
-    std::string toString() const
-    {
-        std::stringstream ss;
-        ss << "**" << name << "** $" <<price;
-        return ss.str();
-    }
-
-    bool operator==(const Goods& rhs) const
-    {
-        return name == rhs.name &&  price == rhs.price;
-    }
-
-
-};
-
-std::ostream& operator<<(std::ostream& out, const Goods& goods)
-{
-    out << goods.toString();
-    return out;
-}
-
-namespace hxk
-{
-template<>
-class LexicalCast<std::string, Goods>
-{
-public:
-    Goods operator()(const std::string& source)
-    {
-        auto node = YAML::Load(source);
-        Goods g;
-        if(node.IsMap()){
-            g.name = node["name"].as<std::string>();
-            g.price = node["price"].as<double>();
-        }
-        return g;
-    }
-};
-
-template<>
-class LexicalCast<Goods,std::string>
-{
-public:
-    std::string operator()(const Goods& g)
-    {
-        YAML::Node node;
-        node["name"] = g.name;
-        node["price"] = g.price;
-        std::stringstream ss;
-        ss << node;
-        return ss.str();
-    }
-};
-}
+/
 
 auto config_test_user_type = hxk::Config::lookUp<Goods>("user.goods",Goods{});
 auto config_test_user_type_list  = hxk::Config::lookUp<std::vector<Goods>>("user.goods_list",std::vector<Goods>{});

@@ -47,6 +47,7 @@ EventHandler& FDContent::getEventHandler(FDEventType type)
 IOManager::IOManager(size_t thread_size, bool use_caller, std::string name):Scheduler(thread_size, use_caller, name)
 {
     LOG_DEBUG(g_logger, "调用IOManager::IOManager()");
+    
     m_epoll_fd = epoll_create(0xffff);
     if(m_epoll_fd == -1) {
         THROW_EXCEPTION_WITH_ERRNO;
