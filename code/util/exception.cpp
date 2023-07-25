@@ -1,4 +1,5 @@
 #include "exception.h"
+#include "util.h"
 
 namespace hxk
 {

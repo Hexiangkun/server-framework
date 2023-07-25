@@ -1,4 +1,8 @@
 #include "fd_manager.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 
 namespace hxk
 {
@@ -76,7 +80,7 @@ void FileDescriptor::setUserNonBlock(bool v)
     m_user_non_block = v;
 }
 
-void FileDescriptor::getUserNonBlock() const
+bool FileDescriptor::getUserNonBlock() const
 {
     return m_user_non_block;
 }
@@ -85,7 +89,8 @@ void FileDescriptor::setSystemNonBlock(bool v)
 {
     m_system_non_block = v;
 }
-void FileDescriptor::getSystemNonBlock() const
+
+bool FileDescriptor::getSystemNonBlock() const
 {
     return m_system_non_block;
 }
@@ -135,7 +140,7 @@ FileDescriptor::_ptr FileDescriptorManagerImpl::get(int fd, bool auto_create)
     }
     lock.unlock();
 
-    assert(m_data.size() > static_cast<size_t>(fd) );
+    assert(m_data.size() > static_cast<size_t>(fd));
 
     WriteScopedLock lock2(&m_lock);
 

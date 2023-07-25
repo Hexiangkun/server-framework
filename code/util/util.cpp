@@ -60,7 +60,7 @@ void BackTrace(std::vector<std::string>& out, int size, int skip)
     free(void_ptr_list);
 }
 
-std::string BackTraceToString(int size, int skip)
+std::string BackTraceToString(int size , int skip)
 {
     std::vector<std::string> call_stack;
     BackTrace(call_stack, size, skip);

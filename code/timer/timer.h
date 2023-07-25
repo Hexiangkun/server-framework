@@ -33,7 +33,7 @@ public:
     /// @return 
     bool refresh();
 
-    ~Timer();
+    ~Timer() = default;
 private:
     /**
      * @Author: hxk

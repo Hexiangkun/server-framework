@@ -1,5 +1,7 @@
 #include "fiber.h"
 #include "scheduler.h"
+#include "exception.h"
+#include "log.h"
 namespace hxk
 {
 static Logger::_ptr g_logger = GET_LOGGER("system");

@@ -13,8 +13,8 @@ namespace hxk
 class Address
 {
 public:
-    typedef std::shared_ptr<Address> _ptr;
-
+    using _ptr = std::shared_ptr<Address>;
+    // Address() = default;
     virtual ~Address() = default;
 
     int getFamily() const ; //获取协议族
@@ -108,42 +108,42 @@ private:
     sockaddr_in6 m_addr;
 };
 
-class UnixAddress : public Address
-{
-public:
-    using _ptr = std::shared_ptr<UnixAddress>;
+// class UnixAddress : public Address
+// {
+// public:
+//     using _ptr = std::shared_ptr<UnixAddress>;
 
-    UnixAddress(const std::string& path);
+//     UnixAddress(const std::string& path);
 
-    const sockaddr* getAddr() const override;
+//     const sockaddr* getAddr() const override;
 
-    socklen_t getAddrLen() const override;
+//     socklen_t getAddrLen() const override;
 
-protected:
-    std::ostream& insert(std::ostream& os) const override;
+// protected:
+//     std::ostream& insert(std::ostream& os) const override;
 
-private:
-    sockaddr_in m_addr;
-    socklen_t m_addr_len;
-};
+// private:
+//     sockaddr_in m_addr;
+//     socklen_t m_addr_len;
+// };
 
-class UnknowAddress : public Address
-{
-public:
-    using _ptr = std::shared_ptr<UnknowAddress>;
+// class UnknowAddress : public Address
+// {
+// public:
+//     using _ptr = std::shared_ptr<UnknowAddress>;
 
-    UnknowAddress(const std::string& path);
+//     UnknowAddress(const std::string& path);
 
-    const sockaddr* getAddr() const override;
+//     const sockaddr* getAddr() const override;
 
-    socklen_t getAddrLen() const override;
+//     socklen_t getAddrLen() const override;
 
-protected:
-    std::ostream& insert(std::ostream& os) const override;
+// protected:
+//     std::ostream& insert(std::ostream& os) const override;
 
-private:
-    sockaddr_in m_addr;
-    socklen_t m_addr_len;
-};
+// private:
+//     sockaddr_in m_addr;
+//     socklen_t m_addr_len;
+// };
 
 }

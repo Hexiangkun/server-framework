@@ -7,8 +7,7 @@
 
 #include "noncopyable.h"
 #include "config.h"
-#include "log.h"
-#include "exception.h"
+
 
 
 namespace hxk

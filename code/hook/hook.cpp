@@ -85,7 +85,7 @@ struct TimerInfo
 template<typename OriginFunc, typename ...Args>
 static ssize_t doIO(int fd, OriginFunc func, const char* hook_func_name, uint32_t event, int fd_timeout_type, Args&& ...args)
 {
-    if(!isHookEnabled()){
+    if(!hxk::isHookEnabled()){
         return func(fd, std::forward<Args>(args)...);
     }
 }

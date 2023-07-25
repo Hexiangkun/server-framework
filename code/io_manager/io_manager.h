@@ -43,7 +43,7 @@ public:
     typedef std::shared_ptr<IOManager> _ptr;
 
 public:
-    explicit IOManager(size_t thread_size, bool use_caller, std::string name = "");
+    explicit IOManager(size_t thread_size, bool use_caller = false, std::string name = "");
     ~IOManager();
 
     /**

@@ -24,10 +24,10 @@ public:
     bool isClosed() const;
 
     void setUserNonBlock(bool v);
-    void getUserNonBlock() const;
+    bool getUserNonBlock() const;
 
     void setSystemNonBlock(bool v);
-    void getSystemNonBlock() const;
+    bool getSystemNonBlock() const;
 
     void setTimeout(int type, uint64_t v);
     uint64_t getTimeout(int type);
