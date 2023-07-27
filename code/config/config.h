@@ -73,7 +73,6 @@ public:
         }
         WriteScopedLock lock(&m_mutex);
         m_value = value;
-        std::cout << "setvalue" << value.size() << std::endl;
     }
 
     std::string toString() const    //返回配置项的值的字符串

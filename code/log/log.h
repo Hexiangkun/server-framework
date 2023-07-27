@@ -23,6 +23,11 @@
 #define LOG_ERROR(logger, message) LOG_LEVEL(logger, hxk::LogLevel::ERROR, message)
 #define LOG_FATAL(logger, message) LOG_LEVEL(logger, hxk::LogLevel::FATAL, message)
 
+#define LOG_S_EVENT(logger,level) \
+
+#define LOG_S_DEBUG(logger)
+
+
 #define LOG_FORMAT_LEVEL(logger, level, format, argv...)        \
     {                                                           \
         char* _buf = nullptr;                                   \
@@ -57,8 +62,9 @@ public:
         ERROR,
         FATAL
     };
-
+    /// 将日志级别转换为文本
     static std::string levelToString(LogLevel::Level level);
+    static LogLevel::Level fromStringToLevel(std::string str);
 };
 
 
@@ -103,6 +109,27 @@ struct LogConfig
     {
         return name == lhs.name;
     }
+};
+
+class LogEventWrap
+{
+public:
+    LogEventWrap(Logger::_ptr logger):m_logerr(logger)
+    {
+
+    }
+    ~LogEventWrap()
+    {
+        
+    }
+
+    std::stringstream& getSS()
+    {
+        return ss;
+    }
+private:
+    Logger::_ptr m_logerr;
+    std::stringstream ss;
 };
 
 /**
